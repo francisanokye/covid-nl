@@ -1,0 +1,89 @@
+---
+title: "COVID-19 in Newfoundland and Labrador"
+author: "Amy Hurford and Zahra Mohammadi"
+output:
+  html_document: default
+  word_document: default
+  pdf_document: default
+fontsize: 11pt
+---
+[Memorial University of Newfoundland and Labrador,](https://www.mun.ca/math/)
+[University of Guelph,](https://mathstat.uoguelph.ca/)
+[Canadian Network for Modelling Infectious Disease,](https://canmod.net/)
+[Mathematics for Public Health,](http://www.fields.utoronto.ca/activities/public-health)
+[One Health Modelling Network for Emerging Infections](https://www.yorku.ca/science/cdm/2021/04/09/ccdm-network-to-model-emerging-infectious-diseases-receives-2-5-million-in-federal-funding/)
+
+```{r setup, include=FALSE}
+require(ggplot2)
+data <- read.csv('https://raw.githubusercontent.com/ahurford/covid-nl/master/NL.csv', fill=TRUE)
+# Fix problems with non-reporting days manually
+data[1,2:7] = data[1,2:7]/2
+# Need to add in December 16
+new1 = data[2,]
+L = length(data[,1])
+new1[1,1] = "2021-12-16"
+new1[1,2:7] = new1[2:7]/2
+data = rbind(data[1,],new1,data[2:L,])
+data[3,2:7] = data[2,2:7]
+data[11,2:7] = data[11,2:7]/3
+L = length(data[,1])
+new1[1,1] = "2021-12-25"
+new1[1,2:8] = data[11,2:8]
+new2 = new1
+new2[1,1] = "2021-12-26"
+data = rbind(data[1:10,],new1, new2,data[11:L,])
+L = length(data[,1])
+data2 = data.frame(date = rep(data$date,4), cases = c(data$EH, data$CH, data$WH, data$LG), RHA = rep(c("Eastern", "Central", "Western", "Labrador-Grenfell"), each=L)) 
+data3 = data.frame(date = rep(data$date,4), cases = 100000*c(data$EH/317664, data$CH/91201, data$WH/76608, data$LG/36069), RHA = rep(c("Eastern", "Central", "Western", "Labrador-Grenfell"), each=L)) 
+T<-7
+DT = function(){
+mod = lm(val~seq(1,T))
+lambda = unname(coef(mod)[2])
+DT = round(log(2)/lambda,2)
+}
+val <- tail(log(data$EH),T)
+DT.eastern = DT()
+val <- tail(log(data$CH),T)
+DT.central = DT()
+val <- tail(log(data$WH),T)
+DT.western = DT()
+val <- tail(log(data$LG),T)
+DT.labrador = DT()
+doubling.time = data.frame(Regional.Health.Authority = c("Eastern", "Central", "Western", "Labrador-Grenfell"), Doubling.Time.in.days = c(DT.eastern, DT.central, DT.western, DT.labrador))
+```
+
+\vspace{2cm}
+The doubling time calculation considers the number of reported cases from the last 7 days:
+
+```{r,echo=F}
+doubling.time
+```
+
+```{r, echo=FALSE}
+g1=ggplot(data3, aes(x=date, y=cases, group = RHA)) +
+geom_line(aes(color=RHA))+
+geom_point(aes(color=RHA))+
+  xlab("")+
+  ylab("")+
+  ggtitle("Reported cases per 100,000 people in each Regional Health Authority")+
+  #ggtitle(paste("At entry: ", exp.on.entry,"days since exposure"))+
+theme_classic()+
+  theme(axis.text.x = element_text(angle = 90),legend.title = element_blank())
+
+g=ggplot(data2, aes(x=date, y=cases, group = RHA)) +
+geom_line(aes(color=RHA))+
+geom_point(aes(color=RHA))+
+  xlab("")+
+  ylab("")+
+  ggtitle("Reported cases by Regional Health Authority")+
+  #ggtitle(paste("At entry: ", exp.on.entry,"days since exposure"))+
+theme_classic()+
+  theme(axis.text.x = element_text(angle = 90),legend.title = element_blank())
+g
+```
+
+
+```{r,echo=F}
+g1
+```
+
