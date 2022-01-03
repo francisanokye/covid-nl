@@ -38,6 +38,9 @@ data3 = data.frame(date = rep(data$date,4), cases = 100000*c(data$EH/317664, dat
 T<-7
 DT = function(){
 mod = lm(val~seq(1,T))
+CI = confint(mod, 'seq(1, T)', level=0.95)
+CI.lower = CI[1]
+CI.upper = CI[2]
 lambda = unname(coef(mod)[2])
 DT = round(log(2)/lambda,2)
 }
